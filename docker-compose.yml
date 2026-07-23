@@ -3,7 +3,7 @@ services:
     image: postgres:17
 
     environment:
-      POSTGRES_DB: payment
+      POSTGRES_DB: payment_db
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
 
