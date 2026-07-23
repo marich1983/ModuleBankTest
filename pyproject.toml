@@ -1,0 +1,20 @@
+[project]
+name = "modulebanktest"
+version = "0.1.0"
+description = "Payment processing service with provider integration"
+authors = [
+    {name = "Marina Andreeva"}
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi (>=0.139.2,<0.140.0)",
+    "uvicorn (>=0.51.0,<0.52.0)",
+    "sqlalchemy (>=2.0.51,<3.0.0)",
+    "asyncpg (>=0.31.0,<0.32.0)",
+    "alembic (>=1.18.5,<2.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
