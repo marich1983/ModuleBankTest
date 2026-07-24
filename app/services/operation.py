@@ -116,7 +116,7 @@ async def submit_operation_service(
     event = OperationEvent(
         operation_id=operation.id,
         sequence_number=next_sequence,
-        type=OperationEventType.SENT_TO_PROVIDER,
+        type=OperationEventType.REQUESTED,
         from_status=old_status,
         to_status=OperationStatus.PROCESSING,
         message="Operation submitted for processing",
