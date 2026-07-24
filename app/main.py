@@ -1,13 +1,19 @@
 from fastapi import FastAPI
+#  poetry run uvicorn app.main:app --reload
+from app.api import health, operations
+
 
 app = FastAPI(
-    title="Payment Service"
+    title="Operation Payment Service - Test task for ModuleBank",
+    version="1.0.0",
 )
 
 
-@app.get("/health")
-async def health():
-    return {
-        "status": "ok"
-    }
+app.include_router(
+    health.router
+)
+
+app.include_router(
+    operations.router
+)
 
