@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
+from sqlalchemy.orm import relationship
+
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
@@ -101,4 +103,10 @@ class Operation(Base):
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+    events: Mapped[list["OperationEvent"]] = relationship(
+        "OperationEvent",
+        back_populates="operation",
+        cascade="all, delete-orphan",
     )

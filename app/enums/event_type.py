@@ -1,0 +1,9 @@
+from enum import Enum
+
+
+class OperationEventType(str, Enum):
+    CREATED = "CREATED"
+    SENT_TO_PROVIDER = "SENT_TO_PROVIDER"
+    SUCCESS_FROM_PROVIDER = "SUCCESS_FROM_PROVIDER"
+    FAIL_FROM_PROVIDER = "FAIL_FROM_PROVIDER"
+    COMPLETED = "COMPLETED"

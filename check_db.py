@@ -6,7 +6,7 @@ async def main():
     conn = await asyncpg.connect(
         user="postgres",
         password="postgres",
-        database="opearation_db",
+        database="operation_db",
         host="localhost",
         port=5432,
     )
