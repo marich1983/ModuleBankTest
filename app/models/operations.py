@@ -16,27 +16,27 @@ from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
-from app.enums import Currency, PaymentProvider, PaymentStatus
+from app.enums import *
 
 
-class Payment(Base):
-    __tablename__ = "payments"
+class Operation(Base):
+    __tablename__ = "operations"
 
     __table_args__ = (
         CheckConstraint(
             "amount > 0",
-            name="check_payment_amount_positive",
+            name="check_operation_amount_positive",
         ),
         Index(
-            "ix_payments_status",
+            "ix_operations_status",
             "status",
         ),
         Index(
-            "ix_payments_provider",
+            "ix_operations_provider",
             "provider",
         ),
         Index(
-            "ix_payments_created_at",
+            "ix_operations_created_at",
             "created_at",
         ),
     )
@@ -61,22 +61,22 @@ class Payment(Base):
         default=Currency.RUB,
     )
 
-    status: Mapped[PaymentStatus] = mapped_column(
+    status: Mapped[OperationStatus] = mapped_column(
         Enum(
-            PaymentStatus,
-            name="payment_status",
+            OperationStatus,
+            name="operation_status",
         ),
         nullable=False,
-        default=PaymentStatus.CREATED,
+        default=OperationStatus.CREATED,
     )
 
-    provider: Mapped[PaymentProvider] = mapped_column(
+    provider: Mapped[OperationProvider] = mapped_column(
         Enum(
-            PaymentProvider,
-            name="payment_provider",
+            OperationProvider,
+            name="operation_provider",
         ),
         nullable=False,
-        default=PaymentProvider.PROVIDER_SIMULATOR,
+        default=OperationProvider.PROVIDER_SIMULATOR,
     )
 
     provider_payment_id: Mapped[str | None] = mapped_column(

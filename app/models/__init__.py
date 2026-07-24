@@ -1,5 +1,5 @@
-from .payment import Payment
+from .operations import Operation
 
 __all__ = [
-    "Payment",
+    "Operation",
 ]

@@ -1,10 +1,10 @@
 from .currency import Currency
-from .payment_status import PaymentStatus
-from .provider import PaymentProvider
+from .operation_status import OperationStatus
+from .provider import OperationProvider
 
 
 __all__ = [
     "Currency",
-    "PaymentStatus",
-    "PaymentProvider",
+    "OperationStatus",
+    "OperationProvider",
 ]
