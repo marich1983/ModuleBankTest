@@ -3,6 +3,7 @@ from sqlalchemy import select
 
 from app.models import Operation, OperationEvent
 from app.enums import OperationStatus, OperationEventType
+from app.services.operation_event import get_next_event_number
 
 
 async def create_operation(
@@ -34,10 +35,14 @@ async def create_operation(
 
     await session.flush()
 
+    sequence_number = await get_next_event_number(
+        session,
+        operation.id
+    )
 
     event = OperationEvent(
         operation_id=operation.id,
-        sequence_number=1,
+        sequence_number=sequence_number,
         type=OperationEventType.CREATED,
         from_status=None,
         to_status=OperationStatus.CREATED,
