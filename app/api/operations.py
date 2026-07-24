@@ -7,8 +7,7 @@ from app.schemas import (
     OperationResponse
 )
 
-from app.services.operation import create_operation
-
+from app.services.operation import create_operation, get_operation_by_operation_id
 
 router = APIRouter(
     prefix="/operations",
@@ -36,6 +35,28 @@ async def create(
         raise HTTPException(
             status_code=409,
             detail="Operation already exists"
+        )
+
+    return operation
+
+@router.get(
+    "/{id}",
+    response_model=OperationResponse,
+    status_code=200,
+)
+async def get_operation_by_id(
+    operation_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    operation = await get_operation_by_operation_id(
+        session=session,
+        operation_id=operation_id,
+    )
+
+    if operation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Operation not found",
         )
 
     return operation

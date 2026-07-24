@@ -51,3 +51,16 @@ async def create_operation(
     await session.refresh(operation)
 
     return operation
+
+
+async def get_operation_by_operation_id(
+    session: AsyncSession,
+    operation_id: str,
+) -> Operation | None:
+
+    result = await session.execute(
+        select(Operation)
+        .where(Operation.operation_id == operation_id)
+    )
+
+    return result.scalar_one_or_none()
