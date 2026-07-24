@@ -49,6 +49,12 @@ class Operation(Base):
         default=uuid.uuid4,
     )
 
+    operation_id: Mapped[str] = mapped_column(
+        String(255),
+        unique=True,
+        nullable=False,
+    )
+
     amount: Mapped[Decimal] = mapped_column(
         Numeric(18, 2),
         nullable=False,
