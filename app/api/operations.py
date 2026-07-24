@@ -9,8 +9,8 @@ from app.schemas import (
     OperationEventResponse
 )
 
-from app.services.operation import create_operation, get_operation_by_operation_id
-from app.services.operation_event import get_operation_events, get_all_events
+from app.services.operation import create_operation, get_operation_by_operation_id, submit_operation_service
+from app.services.operation_event import get_operation_events
 
 router = APIRouter(
     prefix="/operations",
@@ -21,7 +21,8 @@ router = APIRouter(
 @router.post(
     "",
     response_model=OperationResponse,
-    status_code=201
+    status_code=201,
+    summary='Создание операции'
 )
 async def create(
     data: OperationCreate,
@@ -55,9 +56,10 @@ async def create(
 
 
 @router.get(
-    "/{operation_id}/events",
+    "/{id}/events",
     response_model=list[OperationEventResponse],
     status_code=200,
+    summary='Получение всех событий по id операции'
 )
 async def get_events(
     operation_id: str,
@@ -88,10 +90,26 @@ async def get_events(
     return events
 
 
+@router.post(
+    "/operations/{id}/submit",
+    response_model=OperationResponse,
+    summary="Подтверждение операции по id"
+)
+async def submit_operation(
+    operation_id: str,
+    session: AsyncSession = Depends(get_session),
+):
+    return await submit_operation_service(
+        session,
+        operation_id,
+    )
+
+
 @router.get(
     "/{id}",
     response_model=OperationResponse,
     status_code=200,
+    summary='Получение данных об операции по id'
 )
 async def get_operation_by_id(
     operation_id: str,
