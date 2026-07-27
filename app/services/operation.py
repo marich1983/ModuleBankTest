@@ -2,8 +2,9 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from app.models import Operation, OperationEvent
-from app.enums import OperationStatus, OperationEventType
+from app.models import Operation, OperationEvent, OperationOutbox
+from app.enums import OperationStatus, OperationEventType, OperationOutboxStatus
+from app.models.operation_outbox import OperationOutbox
 from app.services.operation_event import get_next_event_number
 
 
@@ -120,6 +121,13 @@ async def submit_operation_service(
         from_status=old_status,
         to_status=OperationStatus.PROCESSING,
         message="Operation submitted for processing",
+    )
+
+    session.add(
+        OperationOutbox(
+            operation_id=operation.id,
+            status=OperationOutboxStatus.PENDING,
+        )
     )
 
     session.add(event)

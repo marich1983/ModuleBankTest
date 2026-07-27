@@ -1,8 +1,8 @@
-"""create operation outbox
+"""add operation outbox table
 
-Revision ID: 1e743bcb7866
+Revision ID: c151dc1ebceb
 Revises: 1b49db4be9e8
-Create Date: 2026-07-27 14:03:35.271004
+Create Date: 2026-07-27 14:55:42.894220
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '1e743bcb7866'
+revision: str = 'c151dc1ebceb'
 down_revision: Union[str, Sequence[str], None] = '1b49db4be9e8'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
