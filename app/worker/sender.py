@@ -1,4 +1,5 @@
 import asyncio
+import httpx
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -7,78 +8,70 @@ from app.db.session import async_session_maker
 from app.enums import (
     OperationEventType,
     OperationStatus,
+    OperationOutboxStatus
 )
-from app.models import Operation, OperationEvent
-
+from app.models import Operation, OperationEvent, OperationOutbox
+from app.services.operation_outbox import (
+    mark_operation_failed,
+    mark_operation_success,
+    mark_operation_retry
+)
 
 from app.services.provider import send_to_provider
 
+MAX_RETRIES = 3
+BASE_DELAY = 5
 
-async def process_events():
+async def process_operation_outbox():
     async with async_session_maker() as session:
         async with session.begin():
             result = await session.scalars(
-                select(OperationEvent)
+                select(OperationOutbox)
                 .where(
-                    OperationEvent.type == OperationEventType.REQUESTED,
-                    OperationEvent.processed_at.is_(None),
+                    OperationOutbox.status == OperationOutboxStatus.PENDING,
+                    OperationOutbox.retry_count < MAX_RETRIES,
                 )
                 .with_for_update(skip_locked=True)
                 .limit(10)
             )
 
-            events = result.all()
+            outbox = result.all()
 
-            now = datetime.now(timezone.utc)
+            for operation_out in outbox:
+                operation_out.status = OperationOutboxStatus.PROCESSING
 
-            # for event in events:
-            #     event.processed_at = now
 
-    for event in events:
-        try:
-            await send_to_provider(event.operation_id)
+    for operation_out in outbox:
 
-            event.processed_at = now
+        async with async_session_maker() as session:
+            operation = await session.get(
+                Operation,
+                operation_out.operation_id,
+            )
+        for retry in range(MAX_RETRIES):
+            try:
+                provider_payment_id = await send_to_provider(operation)
 
-            async with async_session_maker() as session:
-                async with session.begin():
-                    operation = await session.get(Operation, event.operation_id)
+                await mark_operation_success(operation)
 
-                    operation.status = OperationStatus.COMPLETED
+                break
 
-                    session.add(
-                        OperationEvent(
-                            operation_id=operation.id,
-                            type=OperationEventType.SENT_TO_PROVIDER,
-                        )
-                    )
+            except (httpx.TimeoutException, httpx.ConnectError):
+                await mark_operation_retry(operation)
 
-                    session.add(
-                        OperationEvent(
-                            operation_id=operation.id,
-                            type=OperationEventType.SUCCESS_FROM_PROVIDER,
-                        )
-                    )
-        except Exception:
+                if retry == MAX_RETRIES - 1:
+                    await mark_operation_failed(operation)
+                    break
 
-            async with async_session_maker() as session:
-                async with session.begin():
-                    operation = await session.get(Operation, event.operation_id)
+                delay = min(BASE_DELAY * (2 ** retry), 300)
 
-                    operation.status = OperationStatus.FAILED
-
-                    session.add(
-                        OperationEvent(
-                            operation_id=operation.id,
-                            type=OperationEventType.FAIL_FROM_PROVIDER,
-                        )
-                    )
+                await asyncio.sleep(delay)
 
 
 async def main():
 
     while True:
-        await process_events()
+        await process_operation_outbox()
         await asyncio.sleep(5)
 
 

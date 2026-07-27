@@ -103,7 +103,6 @@ async def submit_operation_service(
 
     operation.status = OperationStatus.PROCESSING
 
-
     last_sequence = await session.scalar(
         select(func.max(OperationEvent.sequence_number))
         .where(
@@ -112,7 +111,6 @@ async def submit_operation_service(
     )
 
     next_sequence = (last_sequence or 0) + 1
-
 
     event = OperationEvent(
         operation_id=operation.id,
@@ -123,17 +121,16 @@ async def submit_operation_service(
         message="Operation submitted for processing",
     )
 
-    session.add(
-        OperationOutbox(
+    session.add(event)
+
+    operation_outbox = OperationOutbox(
             operation_id=operation.id,
             status=OperationOutboxStatus.PENDING,
         )
-    )
 
-    session.add(event)
+    session.add(operation_outbox)
+
 
     await session.commit()
-
-    await session.refresh(operation)
 
     return operation
