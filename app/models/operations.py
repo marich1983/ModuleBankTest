@@ -116,3 +116,9 @@ class Operation(Base):
         back_populates="operation",
         cascade="all, delete-orphan",
     )
+
+    outbox: Mapped["OperationOutbox"] = relationship(
+        back_populates="operation",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

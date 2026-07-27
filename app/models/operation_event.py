@@ -61,11 +61,6 @@ class OperationEvent(Base):
         nullable=False,
     )
 
-    processed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
-        nullable=True,
-    )
-
     from_status: Mapped[OperationStatus | None] = mapped_column(
         Enum(
             OperationStatus,
@@ -95,7 +90,6 @@ class OperationEvent(Base):
         nullable=False,
     )
 
-    operation = relationship(
-        "Operation",
+    operation: Mapped["Operation"] = relationship(
         back_populates="events",
     )
