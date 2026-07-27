@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     POSTGRES_DB: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int
+    PROVIDER_URL: str
+    PROVIDER_URL_D: str
 
     @property
     def database_url(self) -> str:
@@ -33,3 +35,4 @@ settings = Settings()
 
 if __name__ == '__main__':
     print(settings.database_url)
+    print(settings.provider_url)

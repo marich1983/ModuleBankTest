@@ -1,35 +1,61 @@
 import asyncio
+import httpx
+
+from app.core.config import settings
+from app.models import Operation
 
 
-async def send_to_provider(operation):
-    print(f"Sending operation {operation.id}")
+class ProviderError(Exception):
+    pass
 
-    # имитация внешнего HTTP
-    await asyncio.sleep(2)
 
-    return True
+class ProviderUnavailable(ProviderError):
+    pass
 
-# async def send_to_provider(operation: Operation):
-#
-#     payload = {
-#         "operationId": operation.operation_id,
-#         "amount": str(operation.amount),
-#         "currency": operation.currency.value,
-#     }
-#
-#     headers = {
-#         "Idempotency-Key": operation.operation_id,
-#         "X-Correlation-ID": operation.operation_id,
-#     }
-#
-#     response = await client.post(
-#         f"{settings.provider_url}/payments",
-#         json=payload,
-#         headers=headers,
-#     )
-#
-#     response.raise_for_status()
-#
-#     data = response.json()
-#
-#     return data["providerPaymentId"]
+
+class ProviderClient:
+
+    def __init__(self):
+        self.client = httpx.AsyncClient(
+            timeout=5.0
+        )
+
+    async def create_payment(
+        self,
+        operation: Operation
+    ) -> dict:
+
+        payload = {
+            "operationId": operation.operation_id,
+            "amount": str(operation.amount),
+            "currency": operation.currency.value
+            ,
+        }
+
+        headers = {
+            "Idempotency-Key": operation.operation_id,
+            "X-Correlation-ID": operation.operation_id,
+        }
+
+        try:
+            response = await self.client.post(
+                f"{settings.PROVIDER_URL}/payments",
+                json=payload,
+                headers=headers,
+            )
+
+        except httpx.RequestError as e:
+            raise ProviderUnavailable(
+                f"network error: {e}"
+            )
+
+        if response.status_code == 503:
+            raise ProviderUnavailable(
+                "provider unavailable"
+            )
+
+        response.raise_for_status()
+        print(response.json()["providerPaymentId"])
+
+        return response.json()
+

@@ -17,10 +17,12 @@ from app.services.operation_outbox import (
     mark_operation_retry
 )
 
-from app.services.provider import send_to_provider
+from app.services.provider import ProviderClient
 
 MAX_RETRIES = 3
 BASE_DELAY = 5
+
+provider_client = ProviderClient()
 
 async def process_operation_outbox():
     async with async_session_maker() as session:
@@ -48,29 +50,34 @@ async def process_operation_outbox():
                 Operation,
                 operation_out.operation_id,
             )
-        for retry in range(MAX_RETRIES):
-            try:
-                provider_payment_id = await send_to_provider(operation)
+            for retry in range(MAX_RETRIES):
+                try:
+                    response = await provider_client.create_payment(operation)
+                    operation.provider_payment_id = response["providerPaymentId"]
+                    print(response["providerPaymentId"])
 
-                await mark_operation_success(operation)
+                    await session.commit()
 
-                break
+                    await mark_operation_success(operation)
 
-            except (httpx.TimeoutException, httpx.ConnectError):
-                await mark_operation_retry(operation)
-
-                if retry == MAX_RETRIES - 1:
-                    await mark_operation_failed(operation)
                     break
 
-                delay = min(BASE_DELAY * (2 ** retry), 300)
+                except (httpx.TimeoutException, httpx.ConnectError):
+                    await mark_operation_retry(operation)
 
-                await asyncio.sleep(delay)
+                    if retry == MAX_RETRIES - 1:
+                        await mark_operation_failed(operation)
+                        break
+
+                    delay = min(BASE_DELAY * (2 ** retry), 300)
+
+                    await asyncio.sleep(delay)
 
 
 async def main():
 
-    while True:
+    # while True:
+    for _ in range(4):
         await process_operation_outbox()
         await asyncio.sleep(5)
 

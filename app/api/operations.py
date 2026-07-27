@@ -61,18 +61,14 @@ async def create(
     summary='Получение всех событий по id операции'
 )
 async def get_events(
-    operation_id: str,
+    id: str,
     session: AsyncSession = Depends(get_session),
 ):
 
-    # operation = await get_operation_by_id(
-    #     operation_id=operation_id,
-    #     session=session
-    # )
 
     operation = await get_operation_by_operation_id(
         session=session,
-        operation_id=operation_id,
+        operation_id=id,
     )
 
     if operation is None:
@@ -95,12 +91,12 @@ async def get_events(
     summary="Подтверждение операции по id"
 )
 async def submit_operation(
-    operation_id: str,
+    id: str,
     session: AsyncSession = Depends(get_session),
 ):
     return await submit_operation_service(
-        session,
-        operation_id,
+        session=session,
+        operation_id=id,
     )
 
 
@@ -111,12 +107,12 @@ async def submit_operation(
     summary='Получение данных об операции по id'
 )
 async def get_operation_by_id(
-    operation_id: str,
+    id: str,
     session: AsyncSession = Depends(get_session),
 ):
     operation = await get_operation_by_operation_id(
         session=session,
-        operation_id=operation_id,
+        operation_id=id,
     )
 
     if operation is None:

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 #  poetry run uvicorn app.main:app --reload
-from app.api import health, operations
+from app.api import health, operations,delete
 
 
 app = FastAPI(
@@ -9,11 +9,9 @@ app = FastAPI(
 )
 
 
-app.include_router(
-    health.router
-)
+app.include_router(health.router)
 
-app.include_router(
-    operations.router
-)
+app.include_router(operations.router)
+
+app.include_router(delete.router)
 
