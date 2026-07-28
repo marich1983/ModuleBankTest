@@ -61,7 +61,6 @@ async def mark_outbox_failed(operation_out: OperationOutbox):
             old_status = operation.status
             operation_out.status = OperationOutboxStatus.FAILED
 
-
             await add_operation_event(
                 session=session,
                 operation=operation,

@@ -2,7 +2,6 @@ from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-
 BASE_DIR = Path(__file__).resolve().parents[2]
 
 
@@ -25,13 +24,11 @@ class Settings(BaseSettings):
             f"{self.POSTGRES_DB}"
         )
 
-    model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env"
-    )
+    model_config = SettingsConfigDict(env_file=BASE_DIR / ".env")
 
 
 settings = Settings()
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print(settings.database_url)
     print(settings.provider_url)

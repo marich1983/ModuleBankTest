@@ -1,8 +1,8 @@
+from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi import HTTPException
 
-from app.enums import OperationStatus, OperationEventType
+from app.enums import OperationEventType, OperationStatus
 from app.models import Operation
 from app.schemas import ReceiptResponse
 from app.services.operation import processing_status_to_done
@@ -46,10 +46,8 @@ def check_provider_payment_id(
 
     return False
 
-async def receipt_processing(
-        session: AsyncSession,
-        receipt: ReceiptResponse
-):
+
+async def receipt_processing(session: AsyncSession, receipt: ReceiptResponse):
     operation = await get_operation_by_receipt(
         session,
         receipt.operationId,
@@ -92,9 +90,7 @@ async def receipt_processing(
             return 204
 
         await processing_status_to_done(
-            session=session,
-            operation=operation,
-            receipt=receipt
+            session=session, operation=operation, receipt=receipt
         )
 
         return 200

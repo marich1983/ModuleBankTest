@@ -1,21 +1,23 @@
 import uuid
 from datetime import datetime
+from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Index, func, UniqueConstraint
+from sqlalchemy import DateTime, Enum, ForeignKey, Index, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.enums import OperationOutboxStatus
 
+if TYPE_CHECKING:
+    from app.models import Operation
+
 
 class OperationOutbox(Base):
     __tablename__ = "operation_outbox"
 
     __table_args__ = (
-        Index(
-            "ix_operation_outbox_status",
-            "status"),
+        Index("ix_operation_outbox_status", "status"),
         UniqueConstraint(
             "operation_id",
             name="uq_operation_dispatch_operation_id",
@@ -54,7 +56,4 @@ class OperationOutbox(Base):
         nullable=False,
     )
 
-    operation: Mapped["Operation"] = relationship(
-        back_populates="outbox"
-    )
-
+    operation: Mapped["Operation"] = relationship(back_populates="outbox")

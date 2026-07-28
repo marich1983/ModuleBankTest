@@ -1,7 +1,8 @@
 from decimal import Decimal
 
 from pydantic import BaseModel, Field
-from app.enums import OperationStatus, OperationEventType, Currency
+
+from app.enums import Currency, OperationStatus
 
 
 class OperationCreate(BaseModel):
@@ -17,9 +18,7 @@ class OperationResponse(BaseModel):
     currency: Currency
     description: str | None
     status: OperationStatus
-    providerPaymentId: str | None = Field(
-        alias="provider_payment_id"
-    )
+    providerPaymentId: str | None = Field(alias="provider_payment_id")
 
     class Config:
         from_attributes = True

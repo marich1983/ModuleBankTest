@@ -15,10 +15,7 @@ config = context.config
 
 from app.core.config import settings
 
-config.set_main_option(
-    "sqlalchemy.url",
-    settings.database_url
-)
+config.set_main_option("sqlalchemy.url", settings.database_url)
 
 
 # Interpret the config file for Python logging.
@@ -70,9 +67,7 @@ async def run_async_migrations() -> None:
     )
 
     async with connectable.connect() as connection:
-        await connection.run_sync(
-            do_run_migrations
-        )
+        await connection.run_sync(do_run_migrations)
 
     await connectable.dispose()
 
@@ -88,10 +83,7 @@ def do_run_migrations(connection) -> None:
 
 
 def run_migrations_online() -> None:
-    asyncio.run(
-        run_async_migrations()
-    )
-
+    asyncio.run(run_async_migrations())
 
 
 if context.is_offline_mode():

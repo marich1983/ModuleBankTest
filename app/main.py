@@ -1,7 +1,7 @@
 from fastapi import FastAPI
+
 #  poetry run uvicorn app.main:app --reload
 from app.api import health, operations, receipts
-
 
 app = FastAPI(
     title="Operation Payment Service - Test task for ModuleBank",
@@ -14,6 +14,3 @@ app.include_router(health.router)
 app.include_router(operations.router)
 
 app.include_router(receipts.router)
-
-
-

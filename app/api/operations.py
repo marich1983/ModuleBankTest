@@ -3,45 +3,31 @@ from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
-from app.schemas import (
-    OperationCreate,
-    OperationResponse,
-    OperationEventResponse
-)
+from app.schemas import OperationCreate, OperationResponse, OperationEventResponse
 
-from app.services.operation import create_operation, get_operation_by_operation_id, submit_operation_service
+from app.services.operation import (
+    create_operation,
+    get_operation_by_operation_id,
+    submit_operation_service,
+)
 from app.services.operation_event import get_operation_events
 
-router = APIRouter(
-    prefix="/operations",
-    tags=["operations"]
-)
+router = APIRouter(prefix="/operations", tags=["operations"])
 
 
 @router.post(
-    "",
-    response_model=OperationResponse,
-    status_code=201,
-    summary='Создание операции'
+    "", response_model=OperationResponse, status_code=201, summary="Создание операции"
 )
-async def create(
-    data: OperationCreate,
-    session: AsyncSession = Depends(get_session)
-):
+async def create(data: OperationCreate, session: AsyncSession = Depends(get_session)):
 
     try:
-        operation = await create_operation(
-            session,
-            data
-        )
+        operation = await create_operation(session, data)
 
     except ValueError:
-        raise HTTPException(
-            status_code=409,
-            detail="Operation already exists"
-        )
+        raise HTTPException(status_code=409, detail="Operation already exists")
 
     return operation
+
 
 # @router.get(
 #     "/events",
@@ -59,13 +45,12 @@ async def create(
     "/{id}/events",
     response_model=list[OperationEventResponse],
     status_code=200,
-    summary='Получение всех событий по id операции'
+    summary="Получение всех событий по id операции",
 )
 async def get_events(
     id: str,
     session: AsyncSession = Depends(get_session),
 ):
-
 
     operation = await get_operation_by_operation_id(
         session=session,
@@ -89,7 +74,7 @@ async def get_events(
 @router.post(
     "/operations/{id}/submit",
     response_model=OperationResponse,
-    summary="Подтверждение операции по id"
+    summary="Подтверждение операции по id",
 )
 async def submit_operation(
     id: str,
@@ -103,8 +88,7 @@ async def submit_operation(
     response = OperationResponse.model_validate(result["operation"])
 
     return JSONResponse(
-        status_code=result['status_code'],
-        content=response.model_dump(mode="json")
+        status_code=result["status_code"], content=response.model_dump(mode="json")
     )
 
 
@@ -112,7 +96,7 @@ async def submit_operation(
     "/{id}",
     response_model=OperationResponse,
     status_code=200,
-    summary='Получение данных об операции по id'
+    summary="Получение данных об операции по id",
 )
 async def get_operation_by_id(
     id: str,
@@ -130,5 +114,3 @@ async def get_operation_by_id(
         )
 
     return operation
-
-

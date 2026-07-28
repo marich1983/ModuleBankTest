@@ -2,8 +2,6 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy.orm import relationship
-
 from sqlalchemy import (
     CheckConstraint,
     DateTime,
@@ -15,7 +13,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.enums import *

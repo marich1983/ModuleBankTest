@@ -1,8 +1,8 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Operation
 from app.enums import OperationStatus, OperationEventType, OperationOutboxStatus
+from app.models import Operation
 from app.models.operation_outbox import OperationOutbox
 from app.schemas import ReceiptResponse
 from app.services.operation_event import add_operation_event
@@ -79,10 +79,7 @@ async def submit_operation_service(
             )
 
         if operation.status != OperationStatus.CREATED:
-            return {
-                'status_code': 200,
-                'operation': operation
-            }
+            return {"status_code": 200, "operation": operation}
 
         old_status = operation.status
 
@@ -106,10 +103,7 @@ async def submit_operation_service(
 
         await session.commit()
 
-        return {
-                'status_code': 202,
-                'operation': operation
-            }
+        return {"status_code": 202, "operation": operation}
 
 
 async def processing_status_to_done(

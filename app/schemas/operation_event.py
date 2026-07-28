@@ -10,19 +10,13 @@ class OperationEventResponse(BaseModel):
 
     type: OperationEventType
 
-    fromStatus: OperationStatus | None = Field(
-        alias="from_status"
-    )
+    fromStatus: OperationStatus | None = Field(alias="from_status")
 
-    toStatus: OperationStatus = Field(
-        alias="to_status"
-    )
+    toStatus: OperationStatus = Field(alias="to_status")
 
     message: str
 
-    occurredAt: datetime = Field(
-        alias="created_at"
-    )
+    occurredAt: datetime = Field(alias="created_at")
 
     model_config = ConfigDict(
         from_attributes=True,
