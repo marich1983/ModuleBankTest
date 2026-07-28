@@ -5,6 +5,7 @@ from sqlalchemy import select
 from app.models import Operation, OperationEvent, OperationOutbox
 from app.enums import OperationStatus, OperationEventType, OperationOutboxStatus
 from app.models.operation_outbox import OperationOutbox
+from app.schemas import ReceiptResponse
 from app.services.operation_event import get_next_event_number
 
 
@@ -134,3 +135,34 @@ async def submit_operation_service(
     await session.commit()
 
     return operation
+
+async def processing_status_to_done(
+        session: AsyncSession,
+        operation: Operation,
+        receipt: ReceiptResponse
+):
+        if operation.status == OperationStatus.PROCESSING:
+            old_status = operation.status
+            operation.status = OperationStatus.COMPLETED
+
+            last_sequence = await session.scalar(
+                select(func.max(OperationEvent.sequence_number))
+                .where(
+                    OperationEvent.operation_id == operation.id
+                )
+            )
+
+            next_sequence = (last_sequence or 0) + 1
+
+            session.add(
+                OperationEvent(
+                    operation_id=operation.id,
+                    sequence_number=next_sequence,
+                    type=OperationEventType.SUCCESS_FROM_PROVIDER,
+                    from_status=old_status,
+                    to_status=OperationStatus.COMPLETED,
+                    message=receipt.message,
+                )
+            )
+
+        return operation
