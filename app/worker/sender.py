@@ -4,12 +4,8 @@ import httpx
 from sqlalchemy import select
 
 from app.db.session import async_session_maker
-from app.enums import (
-    OperationEventType,
-    OperationStatus,
-    OperationOutboxStatus
-)
-from app.models import Operation, OperationEvent, OperationOutbox
+from app.enums import OperationOutboxStatus
+from app.models import Operation, OperationOutbox
 from app.services.operation_outbox import (
     mark_operation_failed,
     mark_operation_success,

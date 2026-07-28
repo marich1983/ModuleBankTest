@@ -2,7 +2,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import HTTPException
 
+from app.enums import OperationStatus, OperationEventType
 from app.models import Operation
+from app.schemas import ReceiptResponse
+from app.services.operation import processing_status_to_done
+from app.services.operation_event import add_operation_event
 
 
 async def get_operation_by_receipt(
@@ -41,3 +45,79 @@ def check_provider_payment_id(
         )
 
     return False
+
+async def receipt_processing(
+        session: AsyncSession,
+        receipt: ReceiptResponse
+):
+    operation = await get_operation_by_receipt(
+        session,
+        receipt.operationId,
+    )
+
+    if operation is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Operation not found",
+        )
+
+    check_provider_payment_id(
+        operation,
+        receipt.providerPaymentId,
+    )
+
+    if receipt.result == "COMPLETED":
+        if operation.status == OperationStatus.COMPLETED:
+            return 204
+
+        if operation.status == OperationStatus.REJECTED:
+            # Поздняя конфликтующая квитанция
+            await add_operation_event(
+                session=session,
+                operation=operation,
+                event_type=OperationEventType.IGNORED,
+                from_status=operation.status,
+                to_status=operation.status,
+                message="Ignored late conflicting receipt",
+            )
+
+        await processing_status_to_done(
+            session=session,
+            operation=operation,
+            receipt=receipt
+        )
+
+        return 201
+
+    if receipt.result == "REJECTED":
+        # Поздняя конфликтующая квитанция
+        if operation.status == OperationStatus.COMPLETED:
+            await add_operation_event(
+                session=session,
+                operation=operation,
+                event_type=OperationEventType.IGNORED,
+                from_status=operation.status,
+                to_status=operation.status,
+                message="Ignored late conflicting receipt",
+            )
+
+            return 204
+
+        # Повтор REJECTED
+        if operation.status == OperationStatus.REJECTED:
+            return 204
+
+        # Первый REJECTED
+        old_status = operation.status
+        operation.status = OperationStatus.REJECTED
+
+        await add_operation_event(
+            session=session,
+            operation=operation,
+            event_type=OperationEventType.FAIL_FROM_PROVIDER,
+            from_status=old_status,
+            to_status=OperationStatus.REJECTED,
+            message=receipt.message,
+        )
+
+        return 201
