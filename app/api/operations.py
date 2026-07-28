@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
@@ -94,9 +95,16 @@ async def submit_operation(
     id: str,
     session: AsyncSession = Depends(get_session),
 ):
-    return await submit_operation_service(
+    result = await submit_operation_service(
         session=session,
         operation_id=id,
+    )
+
+    response = OperationResponse.model_validate(result["operation"])
+
+    return JSONResponse(
+        status_code=result['status_code'],
+        content=response.model_dump(mode="json")
     )
 
 

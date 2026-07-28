@@ -1,13 +1,10 @@
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, Response
 from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
-from app.enums import OperationStatus, OperationEventType
 from app.schemas import ReceiptResponse
-from app.services.operation import processing_status_to_done
-from app.services.operation_event import add_operation_event
-from app.services.receipt import get_operation_by_receipt, check_provider_payment_id, receipt_processing
+from app.services.receipt import receipt_processing
 
 router = APIRouter(
     prefix='/receipts',

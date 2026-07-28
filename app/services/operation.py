@@ -58,54 +58,58 @@ async def get_operation_by_operation_id(
     return result.scalar_one_or_none()
 
 
-from sqlalchemy import select, update, func
+from sqlalchemy import select
 
 
 async def submit_operation_service(
     session: AsyncSession,
     operation_id: str,
 ):
-    operation = await session.scalar(
-        select(Operation)
-        .where(Operation.operation_id == operation_id)
-        .with_for_update()
-    )
-
-    if operation is None:
-        raise HTTPException(
-            status_code=404,
-            detail="Operation not found",
+    async with session.begin():
+        operation = await session.scalar(
+            select(Operation)
+            .where(Operation.operation_id == operation_id)
+            .with_for_update()
         )
 
-    if operation.status != OperationStatus.CREATED:
-        raise HTTPException(
-            status_code=409,
-            detail="Operation cannot be submitted",
+        if operation is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Operation not found",
+            )
+
+        if operation.status != OperationStatus.CREATED:
+            return {
+                'status_code': 200,
+                'operation': operation
+            }
+
+        old_status = operation.status
+
+        operation.status = OperationStatus.PROCESSING
+
+        await add_operation_event(
+            session=session,
+            operation=operation,
+            event_type=OperationEventType.REQUESTED,
+            from_status=old_status,
+            to_status=OperationStatus.PROCESSING,
+            message="Operation submitted for processing",
         )
 
-    old_status = operation.status
+        operation_outbox = OperationOutbox(
+            operation_id=operation.id,
+            status=OperationOutboxStatus.PENDING,
+        )
 
-    operation.status = OperationStatus.PROCESSING
+        session.add(operation_outbox)
 
-    await add_operation_event(
-        session=session,
-        operation=operation,
-        event_type=OperationEventType.REQUESTED,
-        from_status=old_status,
-        to_status=OperationStatus.PROCESSING,
-        message="Operation submitted for processing",
-    )
+        await session.commit()
 
-    operation_outbox = OperationOutbox(
-        operation_id=operation.id,
-        status=OperationOutboxStatus.PENDING,
-    )
-
-    session.add(operation_outbox)
-
-    await session.commit()
-
-    return operation
+        return {
+                'status_code': 202,
+                'operation': operation
+            }
 
 
 async def processing_status_to_done(
