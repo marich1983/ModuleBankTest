@@ -13,7 +13,6 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: int
     PROVIDER_URL: str
-    PROVIDER_URL_D: str
 
     @property
     def database_url(self) -> str:

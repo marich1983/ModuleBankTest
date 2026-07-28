@@ -68,6 +68,14 @@ async def receipt_processing(
 
     if receipt.result == "COMPLETED":
         if operation.status == OperationStatus.COMPLETED:
+            await add_operation_event(
+                session=session,
+                operation=operation,
+                event_type=OperationEventType.COMPLETED,
+                from_status=operation.status,
+                to_status=operation.status,
+                message="Finish",
+            )
             return 204
 
         if operation.status == OperationStatus.REJECTED:
@@ -81,13 +89,15 @@ async def receipt_processing(
                 message="Ignored late conflicting receipt",
             )
 
+            return 204
+
         await processing_status_to_done(
             session=session,
             operation=operation,
             receipt=receipt
         )
 
-        return 201
+        return 200
 
     if receipt.result == "REJECTED":
         # Поздняя конфликтующая квитанция
@@ -105,6 +115,15 @@ async def receipt_processing(
 
         # Повтор REJECTED
         if operation.status == OperationStatus.REJECTED:
+            await add_operation_event(
+                session=session,
+                operation=operation,
+                event_type=OperationEventType.FAIL_FROM_PROVIDER,
+                from_status=operation.status,
+                to_status=operation.status,
+                message="Duplicate receipt",
+            )
+
             return 204
 
         # Первый REJECTED
@@ -120,4 +139,4 @@ async def receipt_processing(
             message=receipt.message,
         )
 
-        return 201
+        return 200
