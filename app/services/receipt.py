@@ -21,7 +21,6 @@ async def get_operation_by_receipt(
     return result.scalar_one_or_none()
 
 
-
 def check_provider_payment_id(
     operation: Operation,
     provider_payment_id: str,
@@ -42,4 +41,3 @@ def check_provider_payment_id(
         )
 
     return False
-

@@ -1,30 +1,22 @@
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
 
-from app.models import Operation, OperationEvent, OperationOutbox
+from app.models import Operation
 from app.enums import OperationStatus, OperationEventType, OperationOutboxStatus
 from app.models.operation_outbox import OperationOutbox
 from app.schemas import ReceiptResponse
-from app.services.operation_event import get_next_event_number
+from app.services.operation_event import add_operation_event
 
 
-async def create_operation(
-    session: AsyncSession,
-    data
-):
+async def create_operation(session: AsyncSession, data):
     result = await session.execute(
-        select(Operation)
-        .where(
-            Operation.operation_id == data.operationId
-        )
+        select(Operation).where(Operation.operation_id == data.operationId)
     )
 
     existing = result.scalar_one_or_none()
 
     if existing:
         raise ValueError("Operation already exists")
-
 
     operation = Operation(
         operation_id=data.operationId,
@@ -38,21 +30,14 @@ async def create_operation(
 
     await session.flush()
 
-    sequence_number = await get_next_event_number(
-        session,
-        operation.id
-    )
-
-    event = OperationEvent(
-        operation_id=operation.id,
-        sequence_number=sequence_number,
-        type=OperationEventType.CREATED,
+    await add_operation_event(
+        session=session,
+        operation=operation,
+        event_type=OperationEventType.CREATED,
         from_status=None,
         to_status=OperationStatus.CREATED,
         message="Operation created",
     )
-
-    session.add(event)
 
     await session.commit()
 
@@ -67,11 +52,11 @@ async def get_operation_by_operation_id(
 ) -> Operation | None:
 
     result = await session.execute(
-        select(Operation)
-        .where(Operation.operation_id == operation_id)
+        select(Operation).where(Operation.operation_id == operation_id)
     )
 
     return result.scalar_one_or_none()
+
 
 from sqlalchemy import select, update, func
 
@@ -88,10 +73,9 @@ async def submit_operation_service(
 
     if operation is None:
         raise HTTPException(
-        status_code=404,
-        detail="Operation not found",
-    )
-
+            status_code=404,
+            detail="Operation not found",
+        )
 
     if operation.status != OperationStatus.CREATED:
         raise HTTPException(
@@ -99,70 +83,45 @@ async def submit_operation_service(
             detail="Operation cannot be submitted",
         )
 
-
     old_status = operation.status
 
     operation.status = OperationStatus.PROCESSING
 
-    last_sequence = await session.scalar(
-        select(func.max(OperationEvent.sequence_number))
-        .where(
-            OperationEvent.operation_id == operation.id
-        )
-    )
-
-    next_sequence = (last_sequence or 0) + 1
-
-    event = OperationEvent(
-        operation_id=operation.id,
-        sequence_number=next_sequence,
-        type=OperationEventType.REQUESTED,
+    await add_operation_event(
+        session=session,
+        operation=operation,
+        event_type=OperationEventType.REQUESTED,
         from_status=old_status,
         to_status=OperationStatus.PROCESSING,
         message="Operation submitted for processing",
     )
 
-    session.add(event)
-
     operation_outbox = OperationOutbox(
-            operation_id=operation.id,
-            status=OperationOutboxStatus.PENDING,
-        )
+        operation_id=operation.id,
+        status=OperationOutboxStatus.PENDING,
+    )
 
     session.add(operation_outbox)
-
 
     await session.commit()
 
     return operation
 
+
 async def processing_status_to_done(
-        session: AsyncSession,
-        operation: Operation,
-        receipt: ReceiptResponse
+    session: AsyncSession, operation: Operation, receipt: ReceiptResponse
 ):
-        if operation.status == OperationStatus.PROCESSING:
-            old_status = operation.status
-            operation.status = OperationStatus.COMPLETED
+    if operation.status == OperationStatus.PROCESSING:
+        old_status = operation.status
+        operation.status = OperationStatus.COMPLETED
 
-            last_sequence = await session.scalar(
-                select(func.max(OperationEvent.sequence_number))
-                .where(
-                    OperationEvent.operation_id == operation.id
-                )
-            )
+        await add_operation_event(
+            session=session,
+            operation=operation,
+            event_type=OperationEventType.SUCCESS_FROM_PROVIDER,
+            from_status=old_status,
+            to_status=OperationStatus.COMPLETED,
+            message=receipt.message,
+        )
 
-            next_sequence = (last_sequence or 0) + 1
-
-            session.add(
-                OperationEvent(
-                    operation_id=operation.id,
-                    sequence_number=next_sequence,
-                    type=OperationEventType.SUCCESS_FROM_PROVIDER,
-                    from_status=old_status,
-                    to_status=OperationStatus.COMPLETED,
-                    message=receipt.message,
-                )
-            )
-
-        return operation
+    return operation

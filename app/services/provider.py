@@ -16,20 +16,14 @@ class ProviderUnavailable(ProviderError):
 class ProviderClient:
 
     def __init__(self):
-        self.client = httpx.AsyncClient(
-            timeout=5.0
-        )
+        self.client = httpx.AsyncClient(timeout=5.0)
 
-    async def create_payment(
-        self,
-        operation: Operation
-    ) -> dict:
+    async def create_payment(self, operation: Operation) -> dict:
 
         payload = {
             "operationId": operation.operation_id,
             "amount": str(operation.amount),
-            "currency": operation.currency.value
-            ,
+            "currency": operation.currency.value,
         }
 
         headers = {
@@ -45,17 +39,12 @@ class ProviderClient:
             )
 
         except httpx.RequestError as e:
-            raise ProviderUnavailable(
-                f"network error: {e}"
-            )
+            raise ProviderUnavailable(f"network error: {e}")
 
         if response.status_code == 503:
-            raise ProviderUnavailable(
-                "provider unavailable"
-            )
+            raise ProviderUnavailable("provider unavailable")
 
         response.raise_for_status()
         print(response.json()["providerPaymentId"])
 
         return response.json()
-
