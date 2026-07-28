@@ -1,3 +1,11 @@
+x-common-env: &common-env
+  POSTGRES_USER: postgres
+  POSTGRES_PASSWORD: postgres
+  POSTGRES_DB: operation_db
+  POSTGRES_HOST: db
+  POSTGRES_PORT: 5432
+  PROVIDER_URL: http://provider-simulator:8081
+
 services:
   db:
     image: postgres:17
@@ -12,6 +20,53 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d operation_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  candidate-service:
+    build: .
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+    environment:
+      <<: *common-env
+
+    ports:
+      - "8080:8080"
+
+  provider-simulator:
+    image: ghcr.io/fintech-dev-lab/internship-provider-simulator:v0.2.0
+
+    environment:
+      CALLBACK_URL: http://candidate-service:8080/receipts
+
+    depends_on:
+      - candidate-service
+
+    ports:
+      - "8081:8081"
+
+  worker:
+    build: .
+    volumes:
+      - .:/app
+    command: worker
+
+    depends_on:
+      db:
+        condition: service_healthy
+      provider-simulator:
+        condition: service_started
+
+    environment:
+      <<: *common-env
 
 volumes:
   postgres_data:
