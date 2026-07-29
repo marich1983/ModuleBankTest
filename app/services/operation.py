@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,6 +8,8 @@ from app.models import Operation
 from app.models.operation_outbox import OperationOutbox
 from app.schemas import ReceiptResponse
 from app.services.operation_event import add_operation_event
+
+logger = logging.getLogger(__name__)
 
 
 async def create_operation(session: AsyncSession, data):
@@ -29,6 +33,13 @@ async def create_operation(session: AsyncSession, data):
     session.add(operation)
 
     await session.flush()
+
+    logger.info(
+        "operation.created",
+        extra={
+            "operation_id": operation.operation_id,
+        },
+    )
 
     await add_operation_event(
         session=session,
@@ -85,6 +96,15 @@ async def submit_operation_service(
 
         operation.status = OperationStatus.PROCESSING
 
+        logger.info(
+            "operation.submitted",
+            extra={
+                "operation_id": operation.operation_id,
+                "provider_payment_id": operation.provider_payment_id or "-",
+                "attempt": "-",
+            },
+        )
+
         await add_operation_event(
             session=session,
             operation=operation,
@@ -112,6 +132,15 @@ async def processing_status_to_done(
     if operation.status == OperationStatus.PROCESSING:
         old_status = operation.status
         operation.status = OperationStatus.COMPLETED
+
+        logger.info(
+            "operation.completed",
+            extra={
+                "operation_id": operation.operation_id,
+                "provider_payment_id": operation.provider_payment_id or "-",
+                "attempt": "-",
+            },
+        )
 
         await add_operation_event(
             session=session,

@@ -1,8 +1,10 @@
 import asyncio
+import logging
 import random
 
 from sqlalchemy import select
 
+from app.core.logger import setup_logging
 from app.db.session import async_session_maker
 from app.enums import OperationOutboxStatus
 from app.models import Operation, OperationOutbox
@@ -13,6 +15,8 @@ from app.services.operation_outbox import (
 )
 
 from app.services.provider import ProviderClient, ProviderUnavailable
+
+logger = logging.getLogger(__name__)
 
 MAX_RETRIES = 3
 BASE_DELAY = 5
@@ -60,6 +64,15 @@ async def process_operation_outbox():
 
                     response = await provider_client.create_payment(operation)
 
+                    logger.info(
+                        "provider.payment.started",
+                        extra={
+                            "operation_id": operation.operation_id,
+                            "provider_payment_id": operation.provider_payment_id or "-",
+                            "attempt": retry + 1,
+                        },
+                    )
+
                 async with async_session_maker() as session:
                     async with session.begin():
                         operation = await session.get(
@@ -71,21 +84,58 @@ async def process_operation_outbox():
 
                         await mark_operation_success(operation_out)
 
+                        logger.info(
+                            "provider.payment.succeeded",
+                            extra={
+                                "operation_id": operation.operation_id,
+                                "provider_payment_id": response["providerPaymentId"],
+                                "attempt": retry + 1,
+                            },
+                        )
+
                 break
 
             except ProviderUnavailable:
                 if retry == MAX_RETRIES - 1:
                     await mark_outbox_failed(operation_out)
+
+                    logger.error(
+                        "provider.payment.failed",
+                        extra={
+                            "operation_id": operation.operation_id,
+                            "provider_payment_id": operation.provider_payment_id or "-",
+                            "attempt": retry + 1,
+                        },
+                    )
                     break
 
                 await mark_operation_retry(operation_out)
 
+                logger.warning(
+                    "provider.payment.retry",
+                    extra={
+                        "operation_id": operation.operation_id,
+                        "provider_payment_id": operation.provider_payment_id or "-",
+                        "attempt": retry + 1,
+                    },
+                )
+
                 delay = min(BASE_DELAY * (2**retry), 300)
-                delay *= random.uniform(0.8, 1.2) # jitter чтобы избежать одновременной отправки
+                delay *= random.uniform(
+                    0.8, 1.2
+                )  # jitter чтобы избежать одновременной отправки
 
                 await asyncio.sleep(delay)
 
             except Exception:
+                logger.exception(
+                    "payment.send.unexpected_error",
+                    extra={
+                        "operation_id": operation.operation_id,
+                        "provider_payment_id": operation.provider_payment_id or "-",
+                        "attempt": retry + 1,
+                    },
+                )
                 raise
 
 
@@ -103,4 +153,5 @@ async def main():
 
 
 if __name__ == "__main__":
+    setup_logging()
     asyncio.run(main())

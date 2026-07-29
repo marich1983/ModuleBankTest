@@ -72,7 +72,7 @@ async def get_events(
 
 
 @router.post(
-    "/operations/{id}/submit",
+    "/{id}/submit",
     response_model=OperationResponse,
     summary="Подтверждение операции по id",
 )

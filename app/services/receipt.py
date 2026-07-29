@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +9,8 @@ from app.models import Operation
 from app.schemas import ReceiptResponse
 from app.services.operation import processing_status_to_done
 from app.services.operation_event import add_operation_event
+
+logger = logging.getLogger(__name__)
 
 
 async def get_operation_by_receipt(
@@ -48,6 +52,7 @@ def check_provider_payment_id(
 
 
 async def receipt_processing(session: AsyncSession, receipt: ReceiptResponse):
+
     operation = await get_operation_by_receipt(
         session,
         receipt.operationId,
@@ -62,6 +67,16 @@ async def receipt_processing(session: AsyncSession, receipt: ReceiptResponse):
     check_provider_payment_id(
         operation,
         receipt.providerPaymentId,
+    )
+
+    logger.info(
+        "receipt.received status=%s",
+        receipt.result,
+        extra={
+            "operation_id": operation.operation_id,
+            "provider_payment_id": receipt.providerPaymentId or "-",
+            "attempt": "-",
+        },
     )
 
     if receipt.result == "COMPLETED":
