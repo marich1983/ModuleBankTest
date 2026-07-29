@@ -81,13 +81,13 @@ async def receipt_processing(session: AsyncSession, receipt: ReceiptResponse):
 
     if receipt.result == "COMPLETED":
         if operation.status == OperationStatus.COMPLETED:
-            await add_operation_event(
-                session=session,
-                operation=operation,
-                event_type=OperationEventType.COMPLETED,
-                from_status=operation.status,
-                to_status=operation.status,
-                message="Finish",
+            logger.info(
+                "receipt.duplicate",
+                extra={
+                    "operation_id": operation.operation_id,
+                    "provider_payment_id": operation.provider_payment_id or "-",
+                    "attempt": "-",
+                },
             )
             return 204
 

@@ -11,7 +11,7 @@ router = APIRouter(prefix="/receipts", tags=["receipts"])
 
 
 @router.post(
-    "/", status_code=201, summary="Получение call-back квитанций от провайдера"
+    "", status_code=201, summary="Получение call-back квитанций от провайдера"
 )
 async def get_callback_receipt(
     receipt: ReceiptResponse,

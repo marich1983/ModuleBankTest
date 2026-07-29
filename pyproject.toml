@@ -14,7 +14,8 @@ dependencies = [
     "alembic (>=1.18.5,<2.0.0)",
     "pydantic-settings (>=2.14.2,<3.0.0)",
     "httpx (>=0.28.1,<0.29.0)",
-    "prometheus-client (>=0.26.0,<0.27.0)"
+    "prometheus-client (>=0.26.0,<0.27.0)",
+    "pytest (>=9.1.1,<10.0.0)"
 ]
 
 
@@ -25,7 +26,8 @@ build-backend = "poetry.core.masonry.api"
 [dependency-groups]
 dev = [
     "black (>=26.5.1,<27.0.0)",
-    "ruff (>=0.16.0,<0.17.0)"
+    "ruff (>=0.16.0,<0.17.0)",
+    "pytest-asyncio (>=1.4.0,<2.0.0)"
 ]
 
 [tool.ruff]
