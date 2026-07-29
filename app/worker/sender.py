@@ -1,4 +1,5 @@
 import asyncio
+import random
 
 from sqlalchemy import select
 
@@ -80,6 +81,7 @@ async def process_operation_outbox():
                 await mark_operation_retry(operation_out)
 
                 delay = min(BASE_DELAY * (2**retry), 300)
+                delay *= random.uniform(0.8, 1.2) # jitter чтобы избежать одновременной отправки
 
                 await asyncio.sleep(delay)
 
