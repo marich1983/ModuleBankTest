@@ -3,6 +3,7 @@ from fastapi.params import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_session
+from app.metrics import RECEIPT_RECEIVED_TOTAL
 from app.schemas import ReceiptResponse
 from app.services.receipt import receipt_processing
 
@@ -16,6 +17,9 @@ async def get_callback_receipt(
     receipt: ReceiptResponse,
     session: AsyncSession = Depends(get_session),
 ):
+
+    RECEIPT_RECEIVED_TOTAL.inc()
+
     async with session.begin():
         status_code = await receipt_processing(session=session, receipt=receipt)
 

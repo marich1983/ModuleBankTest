@@ -7,6 +7,7 @@ from sqlalchemy import select
 from app.core.logger import setup_logging
 from app.db.session import async_session_maker
 from app.enums import OperationOutboxStatus
+from app.metrics import PROVIDER_REQUESTS_TOTAL, PROVIDER_RETRIES_TOTAL, PROVIDER_ERRORS_TOTAL
 from app.models import Operation, OperationOutbox
 from app.services.operation_outbox import (
     mark_operation_retry,
@@ -73,6 +74,11 @@ async def process_operation_outbox():
                         },
                     )
 
+                    PROVIDER_REQUESTS_TOTAL.inc()
+
+                    if retry > 0:
+                        PROVIDER_RETRIES_TOTAL.inc()
+
                 async with async_session_maker() as session:
                     async with session.begin():
                         operation = await session.get(
@@ -96,6 +102,9 @@ async def process_operation_outbox():
                 break
 
             except ProviderUnavailable:
+
+                PROVIDER_ERRORS_TOTAL.inc()
+
                 if retry == MAX_RETRIES - 1:
                     await mark_outbox_failed(operation_out)
 

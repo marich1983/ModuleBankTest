@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import OperationStatus, OperationEventType, OperationOutboxStatus
+from app.metrics import OPERATIONS_TOTAL
 from app.models import Operation
 from app.models.operation_outbox import OperationOutbox
 from app.schemas import ReceiptResponse
@@ -41,6 +42,8 @@ async def create_operation(session: AsyncSession, data):
         },
     )
 
+    OPERATIONS_TOTAL.inc()
+
     await add_operation_event(
         session=session,
         operation=operation,
@@ -69,7 +72,7 @@ async def get_operation_by_operation_id(
     return result.scalar_one_or_none()
 
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 
 async def submit_operation_service(
@@ -152,3 +155,14 @@ async def processing_status_to_done(
         )
 
     return operation
+
+
+
+async def count_waiting_operations(session: AsyncSession):
+
+    result = await session.execute(
+        select(func.count(Operation.id))
+        .where(Operation.status ==  OperationStatus.PROCESSING)
+    )
+
+    return result.scalar_one()
