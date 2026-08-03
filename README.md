@@ -341,7 +341,7 @@ docker compose down -v
 Перед первым запуском необходимо создать отдельную тестовую базу данных:
 
 ```bash
-docker compose exec db psql -U postgres -c "CREATE DATABASE operation_db_test;"
+docker compose exec db psql -U postgres -c "CREATE DATABASE db_operation_test;"
 ```
 
 Запуск тестов
